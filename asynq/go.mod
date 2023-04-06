@@ -1,4 +1,4 @@
-module github.com/LanDoanVu/golang
+module github.com/LanDoanVu/golang/asynq/tasks
 
 go 1.16
 
