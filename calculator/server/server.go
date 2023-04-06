@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 
-	"github.com/golang/protobuf/protoc-gen-go/grpc"
+	"github.com/LanDoanVu/golang/calculator/calculatorpb"
+	"google.golang.org/grpc"
 )
 
 type server struct {
@@ -19,7 +21,11 @@ func main() {
 
 	s := grpc.NewServer()
 
-	err = s.Server(lis)
+	calculatorpb.RegisterCalculatorServiceServer(s, &server{})
+
+	fmt.Printf("Calculator is running......")
+
+	err = s.Serve(lis)
 
 	if err != nil {
 		log.Fatal("Err while Server $v", err)
