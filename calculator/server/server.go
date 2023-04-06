@@ -19,8 +19,6 @@ func main() {
 
 	s := grpc.NewServer()
 
-	calculatorpb.RegisterCalculatorServiceServer(s, &server{})
-
 	err = s.Server(lis)
 
 	if err != nil {
