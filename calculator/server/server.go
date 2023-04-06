@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/LanDoanVu/golang/golang/calculator/calculatorpb"
+	"github.com/LanDoanVu/golang/calculator/calculatorpb"
 	"google.golang.org/grpc"
 )
 
