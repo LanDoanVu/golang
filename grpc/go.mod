@@ -1,4 +1,4 @@
-module github.com/LanDoanVu/golang
+module github.com/LanDoanVu/golang/grpc
 
 go 1.14
 
