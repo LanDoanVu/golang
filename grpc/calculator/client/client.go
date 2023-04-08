@@ -22,14 +22,16 @@ func main() {
 
 	log.Printf("Service client %f", client)
 
-	// callSum(client)
+	// callSum(client) // Unary
 
-	callSNT(client)
+	// callSNT(client) // Server Streaming API
+
+	callAverage(client) // Client Streaming API
 
 }
 
 func callSum(call calculatorpb.CalculatorServiceClient) {
-	log.Println("Calling sum API")
+	log.Println("Calling sum API....")
 	resp, err := call.Sum(context.Background(), &calculatorpb.SumRequest{
 		Num1: 10,
 		Num2: 12,
@@ -44,7 +46,7 @@ func callSum(call calculatorpb.CalculatorServiceClient) {
 
 func callSNT(call calculatorpb.CalculatorServiceClient) {
 
-	log.Println("Calling soNT API....")
+	log.Println("Calling SoNT API....")
 
 	stream, err := call.SoNT(context.Background(), &calculatorpb.SoNTRequest{
 		Number: 120,
@@ -56,16 +58,58 @@ func callSNT(call calculatorpb.CalculatorServiceClient) {
 
 	for {
 		resp, recvErr := stream.Recv()
-		if recvErr != io.EOF {
+		if recvErr == io.EOF {
 			log.Println("Server finish streaming")
 			return
 		}
 
 		if recvErr != nil {
-			log.Fatal("Call soNT recvErr %v", recvErr)
+			log.Fatalf("Call soNT recvErr %v", recvErr)
 
 		}
 
 		log.Printf("So Nguyen To %v", resp.GetResult())
 	}
+
+}
+
+func callAverage(call calculatorpb.CalculatorServiceClient) {
+	log.Printf("Average called....")
+
+	stream, err := call.Average(context.Background())
+
+	if err != nil {
+		log.Fatalf("Call Average err %v", err)
+	}
+
+	listReq := []calculatorpb.AverageRequest{
+		calculatorpb.AverageRequest{
+			Num: 5,
+		},
+		calculatorpb.AverageRequest{
+			Num: 10,
+		},
+		calculatorpb.AverageRequest{
+			Num: 15,
+		},
+		calculatorpb.AverageRequest{
+			Num: 15.5,
+		},
+	}
+
+	for _, req := range listReq {
+		err := stream.Send(&req)
+
+		if err != nil {
+			log.Printf("Send Average request err %v", err)
+		}
+	}
+
+	resp, err := stream.CloseAndRecv()
+
+	if err != nil {
+		log.Fatalf("Recive average reponse %v", err)
+	}
+
+	log.Printf("Average reponse %v", resp)
 }

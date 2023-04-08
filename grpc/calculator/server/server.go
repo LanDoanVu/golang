@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 
@@ -35,7 +36,8 @@ func (*server) SoNT(req *calculatorpb.SoNTRequest,
 			stream.Send(&calculatorpb.SoNTReqonse{
 				Result: k,
 			})
-			log.Println("So nguyen to %v", k)
+
+			// log.Println("So nguyen to %v", k)
 
 		} else {
 			k++
@@ -44,6 +46,30 @@ func (*server) SoNT(req *calculatorpb.SoNTRequest,
 	}
 	return nil
 
+}
+
+func (*server) Average(stream calculatorpb.CalculatorService_AverageServer) error {
+	log.Println("Average called....")
+	var total float32
+	var count int
+	for true {
+		req, recvErr := stream.Recv()
+		if recvErr == io.EOF {
+			resq := &calculatorpb.AverageResponse{
+				Result: total / float32(count),
+			}
+			return stream.SendAndClose(resq)
+		}
+
+		if recvErr != nil {
+			log.Fatalf("Err while recv average %v", recvErr)
+		}
+
+		log.Printf("receive req %v", req)
+		total += req.GetNum()
+		count++
+	}
+	return nil
 }
 
 func main() {

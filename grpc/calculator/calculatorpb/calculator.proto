@@ -21,8 +21,17 @@ message SoNTReqonse {
     int32 result = 1;
 }
 
+message AverageRequest {
+    float num = 1;
+}
+
+message AverageResponse {
+    float result = 1;
+}
+
 service CalculatorService {
-    rpc Sum (SumRequest) returns (SumReponse) {}
-    rpc SoNT (SoNTRequest) returns (stream SoNTReqonse) {}
+    rpc Sum (SumRequest) returns (SumReponse) {};
+    rpc SoNT (SoNTRequest) returns (stream SoNTReqonse) {};
+    rpc Average (stream AverageRequest) returns (AverageResponse) {};
 
 }
