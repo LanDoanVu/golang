@@ -58,13 +58,26 @@ services:
     links:
         - redis
 
-  client:
+  client1:
     image: landv1001/service-test:asynq-client
-    container_name: client
-    hostname: client
-    # restart: on-failure
+    container_name: client1
+    hostname: client1
     ports:
       - 9094:9090
+    depends_on:
+      - redis
+      - worker1
+      - worker2
+      - worker3
+    links:
+        - redis
+
+  client2:
+    image: landv1001/service-test:asynq-client
+    container_name: client2
+    hostname: client2
+    ports:
+      - 9095:9090
     depends_on:
       - redis
       - worker1
