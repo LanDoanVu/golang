@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    hostname: redis
+    ports:
+      - 6379:6379
+    command: redis-server --save 60 1 --loglevel warning
+
+  asynqmon:
+    image: hibiken/asynqmon
+    container_name: asynqmon
+    hostname: asynqmon
+    ports:
+      - 8080:8080
+    environment:
+      - PORT=8080
+      - REDIS_URL=redis://redis:6379
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      - redis
+
+  worker1:
+    image: landv1001/service-test:asynq-worker
+    container_name: worker1
+    hostname: worker1
+    ports:
+      - 9091:9090
+    depends_on:
+      - redis
+      - asynqmon
+    links:
+      - redis
+
+  worker2:
+    image: landv1001/service-test:asynq-worker
+    container_name: worker2
+    hostname: worker2
+    ports:
+      - 9092:9090
+    depends_on:
+      - redis
+      - asynqmon
+    links:
+      - redis
+
+  worker3:
+    image: landv1001/service-test:asynq-worker
+    container_name: worker3
+    hostname: worker3
+    ports:
+      - 9093:9090
+    depends_on:
+      - redis
+      - asynqmon
+    links:
+        - redis
+
+  client:
+    image: landv1001/service-test:asynq-client
+    container_name: client
+    hostname: client
+    # restart: on-failure
+    ports:
+      - 9094:9090
+    depends_on:
+      - redis
+      - worker1
+      - worker2
+      - worker3
+    links:
+        - redis
+
+
