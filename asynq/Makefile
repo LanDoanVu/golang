@@ -4,6 +4,3 @@ run-worker:
 
 run-client:
 	go run client/main.go
-
-run-tasks:
-	go run tasks/payloads.go

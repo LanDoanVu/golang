@@ -1,40 +1,85 @@
 package tasks
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/hibiken/asynq"
 )
 
+// A list of task types.
 const (
-	// TypeWelcomeEmail is a name of the task type
-	// for sending a welcome email.
-	TypeWelcomeEmail = "email:welcome"
-
-	// TypeReminderEmail is a name of the task type
-	// for sending a reminder email.
-	TypeReminderEmail = "email:reminder"
+	TypeEmailDelivery = "email:deliver"
+	TypeImageResize   = "image:resize"
 )
 
-// NewWelcomeEmailTask task payload for a new welcome email.
-func NewWelcomeEmailTask(id int) *asynq.Task {
-	// Specify task payload.
-	payload := map[string]interface{}{
-		"user_id": id, // set user ID
-	}
-
-	// Return a new task with given type and payload.
-	return asynq.NewTask(TypeWelcomeEmail, payload)
+type EmailDeliveryPayload struct {
+	UserID     int
+	TemplateID string
 }
 
-// NewReminderEmailTask task payload for a reminder email.
-func NewReminderEmailTask(id int, ts time.Time) *asynq.Task {
-	// Specify task payload.
-	payload := map[string]interface{}{
-		"user_id": id,          // set user ID
-		"sent_in": ts.String(), // set time to sending
-	}
+type ImageResizePayload struct {
+	SourceURL string
+}
 
-	// Return a new task with given type and payload.
-	return asynq.NewTask(TypeReminderEmail, payload)
+//----------------------------------------------
+// Write a function NewXXXTask to create a task.
+// A task consists of a type and a payload.
+//----------------------------------------------
+
+func NewEmailDeliveryTask(userID int, tmplID string) (*asynq.Task, error) {
+	payload, err := json.Marshal(EmailDeliveryPayload{UserID: userID, TemplateID: tmplID})
+	if err != nil {
+		return nil, err
+	}
+	return asynq.NewTask(TypeEmailDelivery, payload), nil
+}
+
+func NewImageResizeTask(src string) (*asynq.Task, error) {
+	payload, err := json.Marshal(ImageResizePayload{SourceURL: src})
+	if err != nil {
+		return nil, err
+	}
+	// task options can be passed to NewTask, which can be overridden at enqueue time.
+	return asynq.NewTask(TypeImageResize, payload, asynq.MaxRetry(5), asynq.Timeout(20*time.Minute)), nil
+}
+
+//---------------------------------------------------------------
+// Write a function HandleXXXTask to handle the input task.
+// Note that it satisfies the asynq.HandlerFunc interface.
+//
+// Handler doesn't need to be a function. You can define a type
+// that satisfies asynq.Handler interface. See examples below.
+//---------------------------------------------------------------
+
+func HandleEmailDeliveryTask(ctx context.Context, t *asynq.Task) error {
+	var p EmailDeliveryPayload
+	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+	}
+	log.Printf("Sending Email to User: user_id=%d, template_id=%s", p.UserID, p.TemplateID)
+	// Email delivery code ...
+	return nil
+}
+
+// ImageProcessor implements asynq.Handler interface.
+type ImageProcessor struct {
+	// ... fields for struct
+}
+
+func (processor *ImageProcessor) ProcessTask(ctx context.Context, t *asynq.Task) error {
+	var p ImageResizePayload
+	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+	}
+	log.Printf("Resizing image: src=%s", p.SourceURL)
+	// Image resizing code ...
+	return nil
+}
+
+func NewImageProcessor() *ImageProcessor {
+	return &ImageProcessor{}
 }

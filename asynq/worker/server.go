@@ -3,46 +3,36 @@ package main
 import (
 	"log"
 
-	"github.com/LanDoanVu/golang/asynq/tasks"
+	"github.com/LanDoanVu/asynq/tasks"
 
 	"github.com/hibiken/asynq"
 )
 
+const redisAddr = "127.0.0.1:6379"
+
 func main() {
-	// Create and configuring Redis connection.
-	redisConnection := asynq.RedisClientOpt{
-		Addr: "localhost:6379", // Redis server address
-	}
-
-	// Create and configuring Asynq worker server.
-	worker := asynq.NewServer(redisConnection, asynq.Config{
-		// Specify how many concurrent workers to use.
-		Concurrency: 10,
-		// Specify multiple queues with different priority.
-		Queues: map[string]int{
-			"critical": 6, // processed 60% of the time
-			"default":  3, // processed 30% of the time
-			"low":      1, // processed 10% of the time
+	srv := asynq.NewServer(
+		asynq.RedisClientOpt{Addr: redisAddr},
+		asynq.Config{
+			// Specify how many concurrent workers to use
+			Concurrency: 10,
+			// Optionally specify multiple queues with different priority.
+			Queues: map[string]int{
+				"critical": 6,
+				"default":  3,
+				"low":      1,
+			},
+			// See the godoc for other configuration options
 		},
-	})
+	)
 
-	// Create a new task's mux instance.
+	// mux maps a type to a handler
 	mux := asynq.NewServeMux()
+	mux.HandleFunc(tasks.TypeEmailDelivery, tasks.HandleEmailDeliveryTask)
+	mux.Handle(tasks.TypeImageResize, tasks.NewImageProcessor())
+	// ...register other handlers...
 
-	// Define a task handler for the welcome email task.
-	mux.HandleFunc(
-		tasks.TypeWelcomeEmail,       // task type
-		tasks.HandleWelcomeEmailTask, // handler function
-	)
-
-	// Define a task handler for the reminder email task.
-	mux.HandleFunc(
-		tasks.TypeReminderEmail,       // task type
-		tasks.HandleReminderEmailTask, // handler function
-	)
-
-	// Run worker server.
-	if err := worker.Run(mux); err != nil {
-		log.Fatal(err)
+	if err := srv.Run(mux); err != nil {
+		log.Fatalf("could not run server: %v", err)
 	}
 }
